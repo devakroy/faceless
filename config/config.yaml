@@ -1,0 +1,123 @@
+# Faceless YouTube Channel Automation Configuration
+# All tools used are FREE and run locally on your CPU/GPU
+
+# Channel Configuration
+channel:
+  name: "Your Channel Name"
+  niche: "motivation"  # Options: motivation, facts, stories, tech, finance, health, mystery
+  language: "en"
+  upload_frequency: "daily"  # daily, twice_daily, weekly
+  target_duration: 60  # Video duration in seconds (shorts: 60, long: 600)
+  video_format: "shorts"  # shorts or long
+
+# AI Script Generation (Free Options)
+ai:
+  provider: "ollama"  # ollama (local), groq (free tier), or huggingface
+  model: "llama3.2"  # For Ollama: llama3.2, mistral, phi3
+  groq_api_key: ""  # Free tier: 30 requests/min
+  huggingface_token: ""  # Free tier available
+  temperature: 0.8
+  max_tokens: 1000
+
+# Text-to-Speech (Free Local Options)
+tts:
+  provider: "piper"  # piper (fastest), coqui, or edge_tts (free Microsoft)
+  voice: "en_US-lessac-medium"  # Piper voice
+  speed: 1.0
+  pitch: 1.0
+
+# Video Generation
+video:
+  resolution: "1080x1920"  # 1080x1920 for shorts, 1920x1080 for long
+  fps: 30
+  use_gpu: true  # Use GPU acceleration if available
+  background_type: "stock_video"  # stock_video, stock_image, ai_generated
+  
+# Free Stock Media APIs
+media:
+  pexels_api_key: ""  # Free: 200 requests/hour
+  pixabay_api_key: ""  # Free: 100 requests/min
+  preferred_source: "pexels"
+
+# Subtitles/Captions
+subtitles:
+  enabled: true
+  style: "modern"  # modern, classic, minimal
+  font: "Montserrat-Bold"
+  font_size: 60
+  color: "#FFFFFF"
+  stroke_color: "#000000"
+  stroke_width: 3
+  position: "center"  # top, center, bottom
+  word_highlight: true
+  highlight_color: "#FFD700"
+
+# Thumbnail Generation
+thumbnail:
+  enabled: true
+  style: "bold_text"  # bold_text, face_reaction, minimal
+  use_ai: false  # Use AI for thumbnail generation
+
+# YouTube Upload Configuration
+youtube:
+  # OAuth2 credentials (get from Google Cloud Console - FREE)
+  client_secrets_file: "config/client_secrets.json"
+  credentials_file: "config/youtube_credentials.json"
+  
+  # Upload settings
+  privacy_status: "public"  # public, private, unlisted
+  category_id: "22"  # 22=People & Blogs, 24=Entertainment, 27=Education
+  default_tags:
+    - "shorts"
+    - "viral"
+    - "trending"
+  
+  # Scheduling
+  schedule_enabled: true
+  upload_times:
+    - "09:00"
+    - "15:00"
+    - "21:00"
+
+# SEO Optimization
+seo:
+  auto_hashtags: true
+  trending_topics: true
+  keyword_research: true
+  competitor_analysis: false
+
+# Content Strategy for Growth
+growth:
+  # Hook patterns that work
+  hook_styles:
+    - "question"      # "Did you know...?"
+    - "shocking"      # "This will blow your mind..."
+    - "story"         # "A man once..."
+    - "challenge"     # "Try this..."
+    - "secret"        # "Nobody tells you this..."
+  
+  # Engagement tactics
+  call_to_action: true
+  ask_questions: true
+  create_series: true
+
+# Storage and Output
+storage:
+  output_dir: "output"
+  temp_dir: "temp"
+  archive_videos: true
+  max_storage_gb: 50
+
+# Logging
+logging:
+  level: "INFO"
+  file: "logs/automation.log"
+  console: true
+
+# Scheduling
+scheduler:
+  enabled: true
+  check_interval: 3600  # Check every hour
+  max_videos_per_day: 3
+  retry_on_failure: true
+  retry_delay: 300  # 5 minutes

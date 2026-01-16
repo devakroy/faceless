@@ -1,0 +1,68 @@
+# Faceless YouTube Channel Automation - Requirements
+# All packages are FREE and open source
+
+# Core
+pyyaml>=6.0
+python-dotenv>=1.0.0
+click>=8.1.0
+rich>=13.0.0
+schedule>=1.2.0
+
+# AI/LLM Integration (Free options)
+ollama>=0.1.0  # Local LLM runner
+groq>=0.4.0  # Free tier API
+huggingface-hub>=0.20.0
+transformers>=4.36.0
+
+# Text-to-Speech (Free local options)
+piper-tts>=1.2.0  # Fast local TTS
+TTS>=0.22.0  # Coqui TTS
+edge-tts>=6.1.0  # Free Microsoft Edge TTS
+
+# Video Processing
+moviepy>=1.0.3
+opencv-python>=4.8.0
+Pillow>=10.0.0
+numpy>=1.24.0
+imageio>=2.33.0
+imageio-ffmpeg>=0.4.9
+
+# Audio Processing
+pydub>=0.25.1
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# Subtitles/Captions
+whisper>=1.0  # For audio transcription
+srt>=3.5.0
+ass>=0.5.0
+
+# YouTube API
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.0
+
+# Web/API
+requests>=2.31.0
+aiohttp>=3.9.0
+httpx>=0.25.0
+
+# Stock Media APIs
+python-pexels>=1.0.0
+
+# Image Processing & Thumbnails
+fonttools>=4.44.0
+
+# Database (for tracking)
+sqlite3  # Built-in
+sqlalchemy>=2.0.0
+
+# Utilities
+tqdm>=4.66.0
+colorama>=0.4.6
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# GPU Acceleration (optional)
+# torch>=2.0.0  # Uncomment for GPU support
+# torchvision>=0.15.0
