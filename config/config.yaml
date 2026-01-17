@@ -7,7 +7,7 @@ channel:
   niche: "motivation"  # Options: motivation, facts, stories, tech, finance, health, mystery
   language: "en"
   upload_frequency: "daily"  # daily, twice_daily, weekly
-  target_duration: 60  # Video duration in seconds (shorts: 60, long: 600)
+  target_duration: 20  # Video duration in seconds (shorts: 60, long: 600)
   video_format: "shorts"  # shorts or long
 
 # AI Script Generation (Free Options)
@@ -21,8 +21,8 @@ ai:
 
 # Text-to-Speech (Free Local Options)
 tts:
-  provider: "piper"  # piper (fastest), coqui, or edge_tts (free Microsoft)
-  voice: "en_US-lessac-medium"  # Piper voice
+  provider: "edge_tts"  # piper (fastest), coqui, or edge_tts (free Microsoft)
+  voice: "en-US-GuyNeural"  # Edge TTS voice
   speed: 1.0
   pitch: 1.0
 

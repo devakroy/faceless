@@ -15,7 +15,8 @@ import logging
 import json
 import math
 
-from moviepy.editor import (
+# Updated for MoviePy 2.x where classes are directly in moviepy module
+from moviepy import (
     VideoFileClip, AudioFileClip, ImageClip, TextClip,
     CompositeVideoClip, CompositeAudioClip, concatenate_videoclips,
     ColorClip, vfx
@@ -301,15 +302,15 @@ class VideoCompositor:
         
         # Set audio
         final_duration = audio.duration
-        background = background.set_duration(final_duration)
+        background = background.with_duration(final_duration)
         
         # Combine all clips
         all_clips = [background] + subtitle_clips
         
         # Create composite
         video = CompositeVideoClip(all_clips, size=(self.spec.width, self.spec.height))
-        video = video.set_audio(audio)
-        video = video.set_duration(final_duration)
+        video = video.with_audio(audio)
+        video = video.with_duration(final_duration)
         
         # Render
         logger.info(f"Rendering video to {output_path}")

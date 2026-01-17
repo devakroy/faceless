@@ -15,9 +15,9 @@ huggingface-hub>=0.20.0
 transformers>=4.36.0
 
 # Text-to-Speech (Free local options)
-piper-tts>=1.2.0  # Fast local TTS
-TTS>=0.22.0  # Coqui TTS
-edge-tts>=6.1.0  # Free Microsoft Edge TTS
+# Note: piper-tts and TTS don't support Python 3.13 yet
+# Using edge-tts as primary (no Python version restrictions)
+edge-tts>=6.1.0  # Free Microsoft Edge TTS - PRIMARY TTS
 
 # Video Processing
 moviepy>=1.0.3
@@ -29,11 +29,11 @@ imageio-ffmpeg>=0.4.9
 
 # Audio Processing
 pydub>=0.25.1
-librosa>=0.10.0
-soundfile>=0.12.0
+# librosa>=0.10.0  # Removed due to Python 3.13 compatibility
+# soundfile>=0.12.0  # Removed due to Python 3.13 compatibility
 
 # Subtitles/Captions
-whisper>=1.0  # For audio transcription
+# whisper>=1.0  # Removed due to Python 3.13 compatibility
 srt>=3.5.0
 ass>=0.5.0
 
@@ -51,10 +51,11 @@ httpx>=0.25.0
 python-pexels>=1.0.0
 
 # Image Processing & Thumbnails
-fonttools>=4.44.0
+# fonttools removed due to Python 3.13 compatibility
+# Pillow (already included) provides basic font support
 
 # Database (for tracking)
-sqlite3  # Built-in
+# sqlite3 is built-in to Python, no need to install
 sqlalchemy>=2.0.0
 
 # Utilities
@@ -66,3 +67,8 @@ pytz>=2023.3
 # GPU Acceleration (optional)
 # torch>=2.0.0  # Uncomment for GPU support
 # torchvision>=0.15.0
+
+# Python 3.13 Compatibility Notes:
+# - Using edge-tts as primary TTS (no Python version restrictions)
+# - Removed piper-tts, TTS, whisper, librosa, soundfile due to version incompatibility
+# - All core functionality remains available using compatible alternatives
