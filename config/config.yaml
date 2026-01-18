@@ -32,10 +32,12 @@ video:
   fps: 30
   use_gpu: true  # Use GPU acceleration if available
   background_type: "ai_generated"  # stock_video, stock_image, ai_generated
+  sync_with_script: true  # Align background visuals to script sentences
+  max_sync_images: 12
   
 # Free Stock Media APIs
 media:
-  pexels_api_key: ""  # Free: 200 requests/hour
+  pexels_api_key: "EG3H4yY22rkg2biUpyfK2fPb8Lld25BZjMHzhZDsoPeB8g74O9eO8gsf"  # Free: 200 requests/hour
   pixabay_api_key: ""  # Free: 100 requests/min
   preferred_source: "pexels"
 
@@ -73,6 +75,16 @@ ai_video:
   guidance_scale: 1.0
   seed: 42
   base_image_path: ""
+
+# AI Images per Sentence (Recommended for sync)
+ai_image:
+  provider: "diffusers"
+  image_model: "stabilityai/sdxl-turbo"
+  width: 512
+  height: 896
+  num_inference_steps: 6
+  guidance_scale: 1.0
+  seed: 42
 
 # YouTube Upload Configuration
 youtube:

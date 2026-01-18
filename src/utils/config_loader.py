@@ -33,6 +33,8 @@ class VideoConfig:
     fps: int = 30
     use_gpu: bool = True
     background_type: str = "stock_video"
+    sync_with_script: bool = False
+    max_sync_images: int = 12
 
 
 @dataclass

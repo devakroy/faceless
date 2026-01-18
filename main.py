@@ -41,6 +41,16 @@ def create(niche):
     """Create a single video and upload to YouTube."""
     from src.pipeline.automation import create_automation
     
+    # Prompt before starting the progress spinner so prompts are visible.
+    if not niche:
+        niche = click.prompt("Category / Niche (e.g., tech, facts, motivation)", default="tech")
+    duration = click.prompt("Duration (seconds)", type=int, default=20)
+    mode = click.prompt(
+        "Visual mode (ai_video / ai_images / stock_video / stock_images)",
+        type=str,
+        default="ai_images"
+    ).strip().lower()
+
     console.print("\n[bold blue]🎬 Creating Video...[/bold blue]\n")
     
     with Progress(
@@ -52,6 +62,21 @@ def create(niche):
         
         try:
             automation = create_automation()
+
+            # Apply runtime choices
+            automation.config.channel.target_duration = duration
+            if mode in {"ai_video", "ai_generated"}:
+                automation.config.video.background_type = "ai_generated"
+                automation.config.video.sync_with_script = False
+            elif mode in {"ai_images", "ai_image"}:
+                automation.config.video.background_type = "ai_generated"
+                automation.config.video.sync_with_script = True
+            elif mode in {"stock_images", "stock_image"}:
+                automation.config.video.background_type = "stock_image"
+                automation.config.video.sync_with_script = True
+            else:
+                automation.config.video.background_type = "stock_video"
+                automation.config.video.sync_with_script = False
             
             progress.update(task, description="Generating script...")
             result = automation.create_video(niche)

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 import logging
+import re
 
 from src.ai.script_generator import VideoScript
 
@@ -83,10 +84,36 @@ class AIVideoBackgroundGenerator:
 
     def _build_prompt(self, script: VideoScript) -> str:
         """Build a visual prompt from the script."""
+        keywords = self._extract_keywords(script.full_script, script.keywords)
+        keywords_str = ", ".join(keywords[:8]) if keywords else script.niche
         return (
-            f"{script.title}. {script.hook} "
-            f"Cinematic b-roll, {script.niche} theme, high quality, vertical video."
+            f"{script.title}. {script.hook} {script.body} "
+            f"Key visuals: {keywords_str}. "
+            f"Cinematic b-roll, clear subject, {script.niche} theme, vertical video, "
+            f"high quality, realistic, coherent scene."
         )
+
+    def _extract_keywords(self, text: str, fallback: Optional[list] = None) -> list:
+        """Extract compact keywords from script text for better visual relevance."""
+        words = re.findall(r"[A-Za-z0-9']+", text.lower())
+        stopwords = {
+            "the", "and", "that", "with", "this", "from", "your", "you",
+            "are", "was", "were", "have", "has", "had", "will", "just",
+            "like", "what", "when", "then", "than", "them", "they", "their",
+            "our", "for", "but", "not", "all", "can", "could", "should",
+            "about", "into", "over", "under", "more", "most", "very", "really",
+        }
+        keywords = [w for w in words if len(w) > 3 and w not in stopwords]
+        if keywords:
+            # keep order but unique
+            seen = set()
+            unique = []
+            for w in keywords:
+                if w not in seen:
+                    unique.append(w)
+                    seen.add(w)
+            return unique[:12]
+        return fallback or []
 
     def _get_init_image(self, prompt: str):
         """Create or load the initial image for image-to-video."""
