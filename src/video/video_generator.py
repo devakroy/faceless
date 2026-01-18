@@ -91,9 +91,9 @@ class SubtitleGenerator:
         for word, start, end in words:
             try:
                 clip = TextClip(
-                    word,
-                    fontsize=self.style.font_size,
+                    text=word,
                     font=font_path,
+                    font_size=self.style.font_size,
                     color=self.style.color,
                     stroke_color=self.style.stroke_color,
                     stroke_width=self.style.stroke_width,
@@ -101,12 +101,12 @@ class SubtitleGenerator:
                     size=(video_size[0] - 100, None)
                 )
                 
-                clip = clip.set_start(start).set_end(end)
-                clip = clip.set_position(('center', self._get_y_position(video_size[1])))
+                clip = clip.with_start(start).with_end(end)
+                clip = clip.with_position(('center', self._get_y_position(video_size[1])))
                 
                 # Add fade effect
                 if self.style.animation == "fade":
-                    clip = clip.crossfadein(0.1).crossfadeout(0.1)
+                    clip = clip.with_effects([vfx.CrossFadeIn(0.1), vfx.CrossFadeOut(0.1)])
                 
                 clips.append(clip)
             except Exception as e:
@@ -132,23 +132,23 @@ class SubtitleGenerator:
             
             try:
                 clip = TextClip(
-                    sentence.strip(),
-                    fontsize=self.style.font_size,
+                    text=sentence.strip(),
                     font=font_path,
+                    font_size=self.style.font_size,
                     color=self.style.color,
                     stroke_color=self.style.stroke_color,
                     stroke_width=self.style.stroke_width,
                     method='caption',
                     size=(video_size[0] - 100, None),
-                    align='center'
+                    text_align='center'
                 )
                 
-                clip = clip.set_start(current_time).set_duration(time_per_sentence)
-                clip = clip.set_position(('center', self._get_y_position(video_size[1])))
+                clip = clip.with_start(current_time).with_duration(time_per_sentence)
+                clip = clip.with_position(('center', self._get_y_position(video_size[1])))
                 
                 # Add animation
                 if self.style.animation == "fade":
-                    clip = clip.crossfadein(0.2).crossfadeout(0.2)
+                    clip = clip.with_effects([vfx.CrossFadeIn(0.2), vfx.CrossFadeOut(0.2)])
                 
                 clips.append(clip)
                 current_time += time_per_sentence
@@ -221,13 +221,13 @@ class VideoCompositor:
         # Loop to fill duration
         if background.duration < duration:
             loops_needed = math.ceil(duration / background.duration)
-            background = background.loop(n=loops_needed)
+            background = background.with_effects([vfx.Loop(n=loops_needed)])
         
         # Trim to exact duration
-        background = background.subclip(0, duration)
+        background = background.subclipped(0, duration)
         
         # Apply effects
-        background = background.fx(vfx.colorx, 0.7)  # Darken slightly
+        background = background.with_effects([vfx.MultiplyColor(0.7)])  # Darken slightly
         
         return background
     
@@ -250,7 +250,7 @@ class VideoCompositor:
                 clip = self._resize_clip(clip)
                 
                 # Add Ken Burns effect (slow zoom)
-                clip = clip.resize(lambda t: 1 + 0.05 * t / time_per_image)
+                clip = clip.with_effects([vfx.Resize(lambda t: 1 + 0.05 * t / time_per_image)])
                 
                 clips.append(clip)
             except Exception as e:
@@ -279,13 +279,13 @@ class VideoCompositor:
             new_width = self.spec.width
             new_height = int(clip.h * (new_width / clip.w))
         
-        clip = clip.resize((new_width, new_height))
+        clip = clip.resized((new_width, new_height))
         
         # Center crop
         x_center = new_width // 2
         y_center = new_height // 2
         
-        clip = clip.crop(
+        clip = clip.cropped(
             x_center=x_center,
             y_center=y_center,
             width=self.spec.width,

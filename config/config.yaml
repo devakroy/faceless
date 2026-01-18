@@ -31,7 +31,7 @@ video:
   resolution: "1080x1920"  # 1080x1920 for shorts, 1920x1080 for long
   fps: 30
   use_gpu: true  # Use GPU acceleration if available
-  background_type: "stock_video"  # stock_video, stock_image, ai_generated
+  background_type: "ai_generated"  # stock_video, stock_image, ai_generated
   
 # Free Stock Media APIs
 media:
@@ -57,6 +57,22 @@ thumbnail:
   enabled: true
   style: "bold_text"  # bold_text, face_reaction, minimal
   use_ai: false  # Use AI for thumbnail generation
+
+# AI Video Backgrounds (Optional)
+# Requires diffusers + torch and large model downloads.
+ai_video:
+  provider: "diffusers"
+  video_model: "stabilityai/stable-video-diffusion-img2vid-xt"
+  image_model: "stabilityai/sdxl-turbo"
+  width: 384
+  height: 640
+  fps: 6
+  clip_duration: 3.0
+  max_frames: 12
+  num_inference_steps: 6
+  guidance_scale: 1.0
+  seed: 42
+  base_image_path: ""
 
 # YouTube Upload Configuration
 youtube:
