@@ -33,6 +33,8 @@ class VideoConfig:
     fps: int = 30
     use_gpu: bool = True
     background_type: str = "stock_video"
+    sync_with_script: bool = False
+    max_sync_images: int = 12
 
 
 @dataclass
@@ -54,6 +56,29 @@ class SubtitleConfig:
     position: str = "center"
     word_highlight: bool = True
     highlight_color: str = "#FFD700"
+
+
+@dataclass
+class ThumbnailConfig:
+    enabled: bool = True
+    style: str = "bold_text"
+    use_ai: bool = False
+
+
+@dataclass
+class AIVideoConfig:
+    provider: str = "diffusers"
+    video_model: str = "stabilityai/stable-video-diffusion-img2vid-xt"
+    image_model: str = "stabilityai/sdxl-turbo"
+    width: int = 576
+    height: int = 1024
+    fps: int = 8
+    clip_duration: float = 4.0
+    max_frames: int = 25
+    num_inference_steps: int = 8
+    guidance_scale: float = 1.0
+    seed: int = 42
+    base_image_path: str = ""
 
 
 @dataclass
@@ -94,6 +119,8 @@ class Config:
     video: VideoConfig = field(default_factory=VideoConfig)
     media: MediaConfig = field(default_factory=MediaConfig)
     subtitles: SubtitleConfig = field(default_factory=SubtitleConfig)
+    thumbnail: ThumbnailConfig = field(default_factory=ThumbnailConfig)
+    ai_video: AIVideoConfig = field(default_factory=AIVideoConfig)
     youtube: YouTubeConfig = field(default_factory=YouTubeConfig)
     storage: StorageConfig = field(default_factory=StorageConfig)
 
@@ -144,6 +171,14 @@ class ConfigLoader:
         # Parse subtitle config
         if 'subtitles' in raw:
             config.subtitles = SubtitleConfig(**raw['subtitles'])
+        
+        # Parse thumbnail config
+        if 'thumbnail' in raw:
+            config.thumbnail = ThumbnailConfig(**raw['thumbnail'])
+
+        # Parse AI video config
+        if 'ai_video' in raw:
+            config.ai_video = AIVideoConfig(**raw['ai_video'])
         
         # Parse YouTube config
         if 'youtube' in raw:

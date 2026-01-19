@@ -14,12 +14,15 @@ from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 import json
 import threading
+import re
 
 from src.utils.config_loader import get_config, Config
 from src.ai.script_generator import create_script_generator, VideoScript
 from src.audio.tts_engine import create_tts_engine, AudioResult
 from src.media.stock_media import create_stock_media_manager
 from src.video.video_generator import create_video_generator
+from src.video.ai_background import create_ai_background_generator
+from src.video.ai_image_background import create_ai_image_background_generator
 from src.youtube.uploader import create_youtube_uploader, VideoMetadata
 from src.seo.optimizer import create_seo_optimizer
 from src.analytics.tracker import create_analytics_tracker
@@ -57,6 +60,8 @@ class ContentPipeline:
         self.seo_optimizer = create_seo_optimizer(config)
         self.youtube_uploader = create_youtube_uploader(config)
         self.analytics = create_analytics_tracker(config)
+        self.ai_background_generator = None
+        self.ai_image_generator = None
         
         # Pipeline state
         self.is_running = False
@@ -96,21 +101,63 @@ class ContentPipeline:
             
             # Step 3: Get background media
             logger.info("Step 3: Fetching background media...")
-            if self.config.video.background_type == "stock_video":
+            if getattr(self.config.video, "sync_with_script", False):
+                sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', script.full_script) if s.strip()]
+                max_images = getattr(self.config.video, "max_sync_images", 12)
+                if self.config.video.background_type == "ai_generated":
+                    try:
+                        if self.ai_image_generator is None:
+                            self.ai_image_generator = create_ai_image_background_generator(self.config)
+                        backgrounds = self.ai_image_generator.generate_for_sentences(
+                            script, sentences[:max_images]
+                        )
+                    except Exception as e:
+                        logger.warning(f"AI image generation failed, falling back to stock: {e}")
+                        backgrounds = self.media_manager.get_images_for_sentences(
+                            sentences, niche, max_images=max_images
+                        )
+                else:
+                    backgrounds = self.media_manager.get_images_for_sentences(
+                        sentences, niche, max_images=max_images
+                    )
+            elif self.config.video.background_type == "ai_generated":
+                try:
+                    if self.ai_background_generator is None:
+                        self.ai_background_generator = create_ai_background_generator(self.config)
+                    ai_video_path = self.ai_background_generator.generate(script, audio_result.duration)
+                    backgrounds = [ai_video_path]
+                except Exception as e:
+                    logger.warning(f"AI background generation failed, falling back to stock: {e}")
+                    backgrounds = self.media_manager.get_background_videos(
+                        niche, count=3, duration_needed=audio_result.duration
+                    )
+            elif self.config.video.background_type == "stock_video":
                 backgrounds = self.media_manager.get_background_videos(
                     niche, count=3, duration_needed=audio_result.duration
                 )
             else:
                 backgrounds = self.media_manager.get_background_images(niche, count=5)
             logger.info(f"Got {len(backgrounds)} background media files")
+
+            # Split backgrounds into videos/images based on extension
+            video_exts = {".mp4", ".mov", ".mkv", ".webm", ".avi"}
+            image_exts = {".jpg", ".jpeg", ".png", ".webp"}
+            background_videos = []
+            background_images = []
+            for path in backgrounds:
+                ext = Path(path).suffix.lower()
+                if ext in video_exts:
+                    background_videos.append(path)
+                elif ext in image_exts:
+                    background_images.append(path)
             
             # Step 4: Generate video
             logger.info("Step 4: Generating video...")
             video_path = self.video_generator.generate(
                 script_text=script.full_script,
                 audio_path=audio_result.audio_path,
-                background_videos=backgrounds if self.config.video.background_type == "stock_video" else None,
-                background_images=backgrounds if self.config.video.background_type != "stock_video" else None,
+                background_videos=background_videos or None,
+                background_images=background_images or None,
                 word_timestamps=audio_result.word_timestamps
             )
             logger.info(f"Video generated: {video_path}")
@@ -122,7 +169,7 @@ class ContentPipeline:
                 hook=script.hook,
                 keywords=script.keywords,
                 niche=niche,
-                background_image=backgrounds[0] if backgrounds else None
+                background_image=background_images[0] if background_images else None
             )
             logger.info(f"SEO optimized: {seo_result.title}")
             

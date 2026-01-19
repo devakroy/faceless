@@ -27,6 +27,12 @@ numpy>=1.24.0
 imageio>=2.33.0
 imageio-ffmpeg>=0.4.9
 
+# Optional: AI background video (diffusers)
+# Requires large models and is GPU-heavy
+diffusers>=0.30.0
+accelerate>=0.25.0
+safetensors>=0.4.0
+
 # Audio Processing
 pydub>=0.25.1
 # librosa>=0.10.0  # Removed due to Python 3.13 compatibility
