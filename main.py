@@ -17,6 +17,7 @@ All processing runs locally on your CPU/GPU.
 All APIs used are FREE.
 """
 
+import os
 import sys
 import click
 from rich.console import Console
@@ -24,6 +25,9 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import print as rprint
+
+# Set PyTorch CUDA memory configuration for better GPU memory management
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 console = Console()
 

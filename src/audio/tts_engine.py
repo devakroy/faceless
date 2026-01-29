@@ -17,6 +17,9 @@ from dataclasses import dataclass
 import logging
 import wave
 import json
+import imageio_ffmpeg
+
+FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +148,7 @@ class PiperTTS(TTSProvider):
     
     async def synthesize_async(self, text: str, output_path: str) -> AudioResult:
         """Async synthesis using Piper."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.synthesize, text, output_path)
 
 
@@ -206,14 +209,15 @@ class EdgeTTS(TTSProvider):
         )
         
         # Run synchronously
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             communicate.save(mp3_path)
         )
+
         
         # Convert to WAV if needed
         wav_path = output_path.rsplit('.', 1)[0] + '.wav'
         subprocess.run([
-            'ffmpeg', '-y', '-i', mp3_path,
+            FFMPEG_PATH, '-y', '-i', mp3_path,
             '-acodec', 'pcm_s16le', '-ar', '22050',
             wav_path
         ], capture_output=True)
@@ -246,7 +250,7 @@ class EdgeTTS(TTSProvider):
         
         # Convert to WAV
         process = await asyncio.create_subprocess_exec(
-            'ffmpeg', '-y', '-i', mp3_path,
+            FFMPEG_PATH, '-y', '-i', mp3_path,
             '-acodec', 'pcm_s16le', '-ar', '22050',
             wav_path,
             stdout=asyncio.subprocess.PIPE,
@@ -315,7 +319,7 @@ class CoquiTTS(TTSProvider):
     
     async def synthesize_async(self, text: str, output_path: str) -> AudioResult:
         """Async synthesis using Coqui TTS."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.synthesize, text, output_path)
 
 

@@ -51,10 +51,16 @@ class AIVideoBackgroundGenerator:
         if self.ai_config.provider != "diffusers":
             raise ValueError(f"Unknown AI video provider: {self.ai_config.provider}")
 
+        # Aggressive memory cleanup before initialization
+        self._cleanup_gpu_memory()
+        
         self._init_pipelines()
 
         prompt = self._build_prompt(script)
-        init_image = self._get_init_image(prompt)
+        
+        # Generate minimal initial image on GPU (required by Stable Video Diffusion)
+        # Use very small resolution to save memory
+        init_image = self._generate_minimal_init_image(prompt)
 
         fps = self.ai_config.fps or self.config.video.fps
         clip_duration = min(duration, self.ai_config.clip_duration)
@@ -117,25 +123,20 @@ class AIVideoBackgroundGenerator:
 
     def _get_init_image(self, prompt: str):
         """Create or load the initial image for image-to-video."""
+        # This method is now deprecated - we generate video directly from text
+        # Keeping for potential future use
         if self.ai_config.base_image_path:
             from PIL import Image
-
             return Image.open(self.ai_config.base_image_path).convert("RGB")
-
-        logger.info("Generating AI init image from prompt")
-        image = self._image_pipe(
-            prompt=prompt,
-            height=self.ai_config.height,
-            width=self.ai_config.width,
-            num_inference_steps=self.ai_config.num_inference_steps,
-            guidance_scale=self.ai_config.guidance_scale,
-            generator=self._get_generator(),
-        ).images[0]
-        return image
+        
+        # Fallback: generate a simple placeholder if needed
+        logger.warning("Generating fallback image - this shouldn't be needed")
+        from PIL import Image
+        return Image.new('RGB', (self.ai_config.width, self.ai_config.height), color='black')
 
     def _init_pipelines(self):
         """Lazy init diffusers pipelines."""
-        if self._image_pipe and self._video_pipe:
+        if self._video_pipe:
             return
 
         try:
@@ -150,18 +151,18 @@ class AIVideoBackgroundGenerator:
         if torch.cuda.is_available():
             self._device = "cuda"
             self._dtype = torch.float16
-        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
-            self._device = "mps"
-            self._dtype = torch.float16
+            logger.info("Using CUDA GPU for AI video generation")
         else:
-            self._device = "cpu"
-            self._dtype = torch.float32
-            logger.warning("AI video generation on CPU will be very slow.")
+            raise RuntimeError(
+                "CUDA GPU is required for AI video generation. "
+                "Please ensure you have an NVIDIA GPU with CUDA drivers installed."
+            )
 
+        # Load both pipelines but optimize for memory
         logger.info("Loading AI image model: %s", self.ai_config.image_model)
         self._image_pipe = AutoPipelineForText2Image.from_pretrained(
             self.ai_config.image_model,
-            dtype=self._dtype,
+            torch_dtype=self._dtype,
         ).to(self._device)
         if hasattr(self._image_pipe, "enable_attention_slicing"):
             self._image_pipe.enable_attention_slicing()
@@ -169,8 +170,78 @@ class AIVideoBackgroundGenerator:
         logger.info("Loading AI video model: %s", self.ai_config.video_model)
         self._video_pipe = StableVideoDiffusionPipeline.from_pretrained(
             self.ai_config.video_model,
-            dtype=self._dtype,
+            torch_dtype=self._dtype,
         ).to(self._device)
+        
+        # Enable memory efficient attention
+        if hasattr(self._video_pipe, 'enable_model_cpu_offload'):
+            self._video_pipe.enable_model_cpu_offload()
+        
+        # Enable xformers for memory efficiency
+        try:
+            self._video_pipe.enable_xformers_memory_efficient_attention()
+        except Exception as e:
+            logger.info(f"XFormers not available: {e}")
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
+        
+        # Clear GPU cache
+        import torch
+        torch.cuda.empty_cache()
+        
+    def _cleanup_gpu_memory(self):
+        """Aggressively clean up GPU memory."""
+        try:
+            import torch
+            import gc
+            
+            # Clear GPU cache
+            torch.cuda.empty_cache()
+            
+            # Force garbage collection
+            gc.collect()
+            
+            # Reset CUDA device
+            if hasattr(torch.cuda, 'reset_peak_memory_stats'):
+                torch.cuda.reset_peak_memory_stats()
+            
+            logger.info("GPU memory cleanup completed")
+            
+        except Exception as e:
+            logger.warning(f"GPU memory cleanup failed: {e}")
+    
+    def _generate_minimal_init_image(self, prompt: str):
+        """Generate a minimal initial image to use as input for video generation."""
+        logger.info("Generating minimal init image from prompt")
+        
+        # Use very small resolution to save memory
+        small_width = 256  # Much smaller than original
+        small_height = 256
+        
+        # Clear GPU cache before generation
+        import torch
+        torch.cuda.empty_cache()
+        
+        image = self._image_pipe(
+            prompt=prompt,
+            height=small_height,
+            width=small_width,
+            num_inference_steps=4,  # Fewer steps = less memory
+            guidance_scale=1.0,
+            generator=self._get_generator(),
+        ).images[0]
+        
+        # Resize to target resolution for video generation
+        target_width = self.ai_config.width
+        target_height = self.ai_config.height
+        image = image.resize((target_width, target_height))
+        
+        # Clear GPU cache after generation
+        torch.cuda.empty_cache()
+        
+        return image
         if hasattr(self._video_pipe, "enable_attention_slicing"):
             self._video_pipe.enable_attention_slicing()
         if hasattr(self._video_pipe, "enable_vae_slicing"):

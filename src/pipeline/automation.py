@@ -105,38 +105,25 @@ class ContentPipeline:
                 sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', script.full_script) if s.strip()]
                 max_images = getattr(self.config.video, "max_sync_images", 12)
                 if self.config.video.background_type == "ai_generated":
-                    try:
-                        if self.ai_image_generator is None:
-                            self.ai_image_generator = create_ai_image_background_generator(self.config)
-                        backgrounds = self.ai_image_generator.generate_for_sentences(
-                            script, sentences[:max_images]
-                        )
-                    except Exception as e:
-                        logger.warning(f"AI image generation failed, falling back to stock: {e}")
-                        backgrounds = self.media_manager.get_images_for_sentences(
-                            sentences, niche, max_images=max_images
-                        )
+                    if self.ai_image_generator is None:
+                        self.ai_image_generator = create_ai_image_background_generator(self.config)
+                    backgrounds = self.ai_image_generator.generate_for_sentences(
+                        script, sentences[:max_images]
+                    )
                 else:
                     backgrounds = self.media_manager.get_images_for_sentences(
                         sentences, niche, max_images=max_images
                     )
             elif self.config.video.background_type == "ai_generated":
-                try:
-                    if self.ai_background_generator is None:
-                        self.ai_background_generator = create_ai_background_generator(self.config)
-                    ai_video_path = self.ai_background_generator.generate(script, audio_result.duration)
-                    backgrounds = [ai_video_path]
-                except Exception as e:
-                    logger.warning(f"AI background generation failed, falling back to stock: {e}")
-                    backgrounds = self.media_manager.get_background_videos(
-                        niche, count=3, duration_needed=audio_result.duration
-                    )
-            elif self.config.video.background_type == "stock_video":
-                backgrounds = self.media_manager.get_background_videos(
-                    niche, count=3, duration_needed=audio_result.duration
-                )
+                if self.ai_background_generator is None:
+                    self.ai_background_generator = create_ai_background_generator(self.config)
+                ai_video_path = self.ai_background_generator.generate(script, audio_result.duration)
+                backgrounds = [ai_video_path]
             else:
-                backgrounds = self.media_manager.get_background_images(niche, count=5)
+                if self.ai_background_generator is None:
+                    self.ai_background_generator = create_ai_background_generator(self.config)
+                ai_video_path = self.ai_background_generator.generate(script, audio_result.duration)
+                backgrounds = [ai_video_path]
             logger.info(f"Got {len(backgrounds)} background media files")
 
             # Split backgrounds into videos/images based on extension

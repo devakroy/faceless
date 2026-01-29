@@ -41,11 +41,18 @@ class AIImageBackgroundGenerator:
         if self.ai_config.provider != "diffusers":
             raise ValueError(f"Unknown AI image provider: {self.ai_config.provider}")
 
+        # Aggressive memory cleanup before initialization
+        self._cleanup_gpu_memory()
+        
         self._init_pipeline()
 
         image_paths: List[str] = []
         for idx, sentence in enumerate(sentences):
             prompt = self._build_prompt(script, sentence)
+            # Clear GPU cache before generation
+            import torch
+            torch.cuda.empty_cache()
+            
             image = self._image_pipe(
                 prompt=prompt,
                 height=self.ai_config.height,
@@ -54,6 +61,9 @@ class AIImageBackgroundGenerator:
                 guidance_scale=self.ai_config.guidance_scale,
                 generator=self._get_generator(),
             ).images[0]
+            
+            # Clear GPU cache after generation
+            torch.cuda.empty_cache()
             output_path = self.output_dir / f"ai_img_{idx}_{abs(hash(prompt)) % 100000}.png"
             image.save(output_path)
             image_paths.append(str(output_path))
@@ -82,19 +92,57 @@ class AIImageBackgroundGenerator:
         if torch.cuda.is_available():
             self._device = "cuda"
             self._dtype = torch.float16
-        elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
-            self._device = "mps"
-            self._dtype = torch.float16
+            logger.info("Using CUDA GPU for AI image generation")
         else:
-            self._device = "cpu"
-            self._dtype = torch.float32
-            logger.warning("AI image generation on CPU will be slow.")
+            raise RuntimeError(
+                "CUDA GPU is required for AI image generation. "
+                "Please ensure you have an NVIDIA GPU with CUDA drivers installed."
+            )
 
         logger.info("Loading AI image model: %s", self.ai_config.image_model)
         self._image_pipe = AutoPipelineForText2Image.from_pretrained(
             self.ai_config.image_model,
-            dtype=self._dtype,
+            torch_dtype=self._dtype,
         ).to(self._device)
+        
+        # Enable memory efficient attention
+        if hasattr(self._image_pipe, 'enable_model_cpu_offload'):
+            self._image_pipe.enable_model_cpu_offload()
+        
+        # Enable xformers for memory efficiency
+        try:
+            self._image_pipe.enable_xformers_memory_efficient_attention()
+        except Exception as e:
+            logger.info(f"XFormers not available: {e}")
+        
+        # Force garbage collection
+        import gc
+        gc.collect()
+        
+        # Clear GPU cache
+        import torch
+        torch.cuda.empty_cache()
+        
+    def _cleanup_gpu_memory(self):
+        """Aggressively clean up GPU memory."""
+        try:
+            import torch
+            import gc
+            
+            # Clear GPU cache
+            torch.cuda.empty_cache()
+            
+            # Force garbage collection
+            gc.collect()
+            
+            # Reset CUDA device
+            if hasattr(torch.cuda, 'reset_peak_memory_stats'):
+                torch.cuda.reset_peak_memory_stats()
+            
+            logger.info("GPU memory cleanup completed")
+            
+        except Exception as e:
+            logger.warning(f"GPU memory cleanup failed: {e}")
         if hasattr(self._image_pipe, "enable_attention_slicing"):
             self._image_pipe.enable_attention_slicing()
 
